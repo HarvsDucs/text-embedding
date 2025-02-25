@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify 
-from langchain_experimental.text_splitter import SemanticChunker
-from langchain_openai import OpenAIEmbeddings
+import ollama
 
 app = Flask(__name__)
 
@@ -26,21 +25,27 @@ def process_text():
 
         text = data['text']
 
-            # Initialize OpenAI Embeddings
-        embeddings = OpenAIEmbeddings()  # You can adjust the model if needed
+        chunk_embeddings_data = []
 
-            # Initialize SemanticChunker
-        text_splitter = SemanticChunker(embeddings=embeddings)
+        vector_embedding = ollama.embeddings(model='nomic-embed-text', prompt=text)
 
-            # Perform semantic chunking
-        chunks = text_splitter.split_text(text)
+        chunk_embeddings_data.append({
+            "text": text,
+            "vector_embedding": vector_embedding['embedding']
+        })
 
-            # Return the chunks as a JSON response
-        return jsonify({'chunks': chunks}), 200
+        return chunk_embeddings_data
 
     except Exception as e:
-            print(f"An error occurred: {e}")  # Log the exception
-            return jsonify({'error': str(e)}), 500  # Return a 500 error with the exception message
+        print(f"Error embedding text: {text}. Error: {e}")
+        # Handle the error appropriately, e.g., skip the chunk or log the error
+        chunk_embeddings_data.append({ # Store even if embedding fails, but mark it
+            "text": text,
+            "vector_embedding": None, # Or some error marker
+            "error": str(e)
+        })
+
+        return jsonify({'error': str(e)}), 500  # Return a 500 error with the exception message
 
 if __name__ == '__main__':
     app.run(debug=True)
