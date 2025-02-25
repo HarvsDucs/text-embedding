@@ -1,19 +1,12 @@
 from flask import Flask, request, jsonify 
-import ollama
+
+from openai import OpenAI
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
     return 'Hello, World!'
-
-@app.route('/about')
-def about():
-    return 'About'
-
-@app.route('/test')
-def test():
-    return 'test'
 
 @app.route('/process_text', methods=['POST'])
 def process_text():
@@ -25,25 +18,17 @@ def process_text():
 
         text = data['text']
 
-        chunk_embeddings_data = []
+        client = OpenAI()
 
-        vector_embedding = ollama.embeddings(model='nomic-embed-text', prompt=text)
+        response = client.embeddings.create(
+            input=text,
+            model="text-embedding-3-small"
+        )
 
-        chunk_embeddings_data.append({
-            "text": text,
-            "vector_embedding": vector_embedding['embedding']
-        })
-
-        return chunk_embeddings_data
+        return response.data[0].embedding
 
     except Exception as e:
         print(f"Error embedding text: {text}. Error: {e}")
-        # Handle the error appropriately, e.g., skip the chunk or log the error
-        chunk_embeddings_data.append({ # Store even if embedding fails, but mark it
-            "text": text,
-            "vector_embedding": None, # Or some error marker
-            "error": str(e)
-        })
 
         return jsonify({'error': str(e)}), 500  # Return a 500 error with the exception message
 
