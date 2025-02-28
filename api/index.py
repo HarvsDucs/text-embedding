@@ -47,12 +47,13 @@ def require_api_key(f):
             return jsonify({"message": "Unauthorized. Invalid API key."}), 401
     return decorated_function
 
-    
+
 @app.route('/')
 def home():
     return 'Hello, World!'
 
 @app.route('/process_text', methods=['POST'])
+@require_api_key
 def process_text():
     try:
         data = request.get_json()  # Get JSON data from the request body
